@@ -66,13 +66,6 @@ all: deps compile test
 # Rules to build the system
 # =============================================================================
 
-frontend:
-	`rm -rf deps/xray_web_frontend/.git`
-	`cp -r deps/xray_web_frontend .`
-
-deps_eunit: 
-	$(REBAR) -C rebar_test.config get-deps
-	$(REBAR) -C rebar_test.config compile
 
 deps:
 	$(REBAR) get-deps
@@ -83,7 +76,7 @@ update-deps:
 	$(REBAR) compile
 
 eunit:
-	$(REBAR)  eunit skip_deps=true
+	$(REBAR)  eunit skip_deps=true -v
 
 qc: compile 
 	$(REBAR) qc
@@ -103,7 +96,7 @@ doc:
 
 
 ct: compile 
-	$(REBAR) -C rebar_test.config  skip_deps=true ct
+	$(REBAR)  skip_deps=true ct
 
 test: compile eunit #dialyzer
 
