@@ -57,15 +57,18 @@ out(P) ->
    on_output(fun(S,F) -> io:format(user, S, F) end,P).
 
 run_test_() ->
-    Props = [
-	     fun prop_compile_buffer/0,
-	     fun prop_find_exported_clauses/0
-
-             ],
-    [
+    {timeout, 360000,
      begin
-         P = out(Prop()),
-         ?_assert(quickcheck(numtests(100,P)))
-     end
-     || Prop <- Props].
+     Props = [
+	      fun prop_compile_buffer/0,
+	      fun prop_find_exported_clauses/0
+	      
+             ],
+     [
+      begin
+	  P = out(Prop()),
+	  ?_assert(quickcheck(numtests(100,P)))
+      end
+      || Prop <- Props]
+     end}.
 

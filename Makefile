@@ -83,7 +83,7 @@ update-deps:
 	$(REBAR) compile
 
 eunit:
-	$(REBAR)  eunit skip_deps=true --verbose
+	$(REBAR)  eunit skip_deps=true
 
 qc: compile eunit 
 
