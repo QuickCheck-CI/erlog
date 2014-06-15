@@ -85,7 +85,8 @@ update-deps:
 eunit:
 	$(REBAR)  eunit skip_deps=true
 
-qc: compile eunit 
+qc: compile 
+	$(REBAR) qc
 
 
 compile:
