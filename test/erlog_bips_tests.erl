@@ -73,22 +73,3 @@ prop_number()->
             end).
 
 
-out(P) ->
-   on_output(fun(S,F) -> io:format(user, S, F) end,P).
-
-run_test_() ->
-    Props = [
-             fun prop_integer/0,
-             fun prop_number/0,
-             fun prop_float/0,
-             fun prop_equals/0,
-             fun prop_not_equals/0,
-	     fun prop_comp/0
-
-             ],
-    [
-     begin
-         P = out(Prop()),
-         ?_assert(quickcheck(numtests(500,P)))
-     end
-     || Prop <- Props].

@@ -2,15 +2,41 @@
 -include_lib("eqc/include/eqc.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -compile(export_all).
-fail_test() ->
-    {ok, PID}   = erlog:start_link(),
-    ?assertEqual(fail,erlog:prove(PID, fail)),
-    ok.
 
-not_equal_test() ->
-    {ok, PID}   = erlog:start_link(),
-    ?assertEqual(fail,erlog:prove(PID, {'\=', 1,2})),
-    ok.
+
+
+prop_equal() ->
+    ?FORALL({I,J},
+	    {int(),int()},
+	    begin
+		E   = erlog:new(),
+	        case E({prove, {'==',I,J}}) of
+		    {fail, _} ->
+			I =/= J;
+		    {{succeed,[]},_} ->
+			I == J
+		end
+	    end).
+
+prop_not_equal() ->
+    ?FORALL({I,J},
+	    {int(),int()},
+	    begin
+		E   = erlog:new(),
+	        case E({prove, {'\\==',I,J}}) of
+		    {fail, _} ->
+			I == J;
+		    {{succeed,[]},_} ->
+			I =/= J
+		end
+	    end).
+
+prop_bool() ->
+    E = erlog:new(),
+    {{succeed, []},_} =  E({prove, true}),
+    {fail,_}          =  E({prove, false}),
+    {fail,_}          =  E({prove, fail}),
+    true.
 
 
 keys() ->
@@ -35,16 +61,12 @@ keys() ->
      "54BB4C80",
      "537E16D9"].
 
-bool_test() ->
-    {ok,E} = erlog:start_link(),
-    ?assertEqual({succeed, []}, erlog:prove(E, true)),
-    ?assertEqual(fail, erlog:prove(E, false)),
-    ok.
+
 
 option() ->
     oneof([assert, asserta, assertz]).
 value() ->
-    {model, oneof(keys()), int()}.
+    {model, elements(keys()), int()}.
 
 prop_assert() ->
     ?FORALL({Op, Value},
@@ -73,20 +95,20 @@ prop_retract() ->
             end).
               
 
-out(P) ->
-   on_output(fun(S,F) -> io:format(user, S, F) end,P).
+%% out(P) ->
+%%    on_output(fun(S,F) -> io:format(user, S, F) end,P).
 
-run_test_() ->
-    Props = [
-             fun prop_assert/0,
-             fun prop_retract/0
-             ],    
-    [
-     begin
-         P = out(Prop()),
-         ?_assert(quickcheck(numtests(500,P)))
-     end
-     || Prop <- Props].
+%% run_test_() ->
+%%     Props = [
+%%              fun prop_assert/0,
+%%              fun prop_retract/0
+%%              ],    
+%%     [
+%%      begin
+%%          P = out(Prop()),
+%%          ?_assert(quickcheck(numtests(500,P)))
+%%      end
+%%      || Prop <- Props].
 
 
 

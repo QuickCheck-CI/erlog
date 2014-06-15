@@ -2,9 +2,9 @@
 -include_lib("eqc/include/eqc.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -compile(export_all).
-partially_ordered_set_test() ->
+prop_partially_ordered_set() ->
     {ok, PID}   =				erlog:start_link(),
-    ok          =				erlog:consult(PID, "../test/po_set.pl"),    
+    ok          =				erlog:consult(PID, "test/po_set.pl"),    
     ?assertEqual({succeed, []},			erlog:prove(PID, {connected, a, b})),
     ?assertEqual(fail,				erlog:prove(PID, {connected, b,c})),
     ?assertEqual({succeed, []},			erlog:prove(PID, {ancestor, a, f})),
@@ -12,7 +12,8 @@ partially_ordered_set_test() ->
     ?assertEqual({succeed, [{'Ancestor', b}]},	erlog:next_solution(PID)),
     ?assertEqual({succeed, [{'p', [a,b,f]}]},	erlog:prove(PID,{path, a, f, {p}})),
     ?assertEqual({succeed, [{'p', [a,c,d,f]}]}, erlog:next_solution(PID)),
-    ok.
+
+    true.
 
 gnode() ->
     {edge, char(),char()}.
@@ -41,17 +42,17 @@ prop_travel() ->
 			 end).
 
 
-out(P) ->
-   on_output(fun(S,F) -> io:format(user, S, F) end,P).
+%% out(P) ->
+%%    on_output(fun(S,F) -> io:format(user, S, F) end,P).
 
-run_test_() ->
-    Props = [
-	     fun prop_travel/0
-             ],    
-    [
-     begin
-         P = out(Prop()),
-         ?_assert(quickcheck(numtests(500,P)))
-     end
-     || Prop <- Props].
+%% run_test_() ->
+%%     Props = [
+%% 	     fun prop_travel/0
+%%              ],    
+%%     [
+%%      begin
+%%          P = out(Prop()),
+%%          ?_assert(quickcheck(numtests(500,P)))
+%%      end
+%%      || Prop <- Props].
 
