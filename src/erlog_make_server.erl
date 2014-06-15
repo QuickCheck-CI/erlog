@@ -87,12 +87,6 @@ compile_from_file(Module, CoreDoc) ->
     {ok, Module}	= compile:file(File, [from_core,debug_info,return_errors]), 
     ok			= file:delete(File),
     {ok, Module}.
-    
-    
-		  
-		     
-	
-     
 
 find_exports(PL) ->
     case PL({prove, {findall, {'X'}, {'erl_export',{'X'} }, {'Xs'}}}) of
