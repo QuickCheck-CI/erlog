@@ -40,15 +40,15 @@ compile_buffer(Module, _Buffer) ->
     
     {ok, Module}.
 
-core_module_info() ->
+core_module_info(ModuleName) ->
     ["'module_info'/0 =\n",
      "    fun () ->\n",
      "	call 'erlang':'get_module_info'\n",
-     "	    ('custom_server')\n",
+     "	    ('",ModuleName,"')\n",
      "'module_info'/1 =\n",
      "    fun (_cor0) ->\n",
      "	call 'erlang':'get_module_info'\n",
-     "	    ('custom_server', _cor0)\n",
+     "	    ('",ModuleName,"', _cor0)\n",
      "end\n"].
 
 make_prolog_fun({FunName, Arity}) when is_atom(FunName) andalso is_integer(Arity) ->
@@ -78,10 +78,15 @@ create_core_erlang(Module, PL) when is_atom(Module) ->
     Core		= ["module '", atom_to_list(Module), "' [", join(ExportComp,"                    ,"),
 			   "]\n","     attributes []\n"],
     PLFuns		= [make_prolog_fun({FunName,Arity}) ||{FunName, Arity} <-PLExports],
-    CoreDoc		= iolist_to_binary([Core, PLFuns, core_module_info()]),
-    ?debugFmt("~n~s~n", [CoreDoc]),
-    {ok, Module, Code}  = compile:forms(CoreDoc, [from_core,debug_info,return_errors]), 
-    {ok, Code, CoreDoc}.
+    CoreDoc		= iolist_to_binary([Core, PLFuns, core_module_info(atom_to_list(Module))]),
+    compile_from_file(Module, CoreDoc).
+
+compile_from_file(Module, CoreDoc) ->
+    File		= atom_to_list(Module) ++ ".core",
+    ok			= file:write_file(File, CoreDoc),
+    {ok, Module}	= compile:file(File, [from_core,debug_info,return_errors]), 
+    ok			= file:delete(File),
+    {ok, Module}.
     
     
 		  

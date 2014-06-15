@@ -1,3 +1,4 @@
+%-*-Erlang-*-
 {application, erlog,
  [{description, "Erlog , Prolog in Erlang"},
   {vsn, "0.6"},
@@ -13,7 +14,8 @@
 	     erlog_lists,
 	     erlog_parse,
 	     erlog_scan,
-	     erlog_shell
+	     erlog_shell,
+	     erlog_make_server
 	    ]},
   {registered, []},
   {applications, [kernel,stdlib]}

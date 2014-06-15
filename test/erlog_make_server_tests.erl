@@ -34,11 +34,17 @@ clauses() ->
     ok.
 
 prop_compile_buffer() ->
-    ?FORALL({ModName,Clauses},
-	    {'edges',non_empty(list(erl_export()))},
+    ?FORALL({ModName,
+	     Clauses},
+	    {'edges',
+	     non_empty(list(erl_export()))},
 	    begin
+		%% Purge any results of old runs
+		code:purge(ModName),
+		code:delete(ModName),
+
 		PL		= add_export_clauses(Clauses, erlog:new()),
-		{ok,Core,PL}	= erlog_make_server:create_core_erlang(ModName,PL),
+		{ok,ModName}	= erlog_make_server:create_core_erlang(ModName,PL),
 		Exports		= ModName:module_info(exports),
 		length(Exports) =:= length(Clauses) + 2 andalso
 		    lists:all(fun(_Export = {erl_export, {'/',Fun, Arity}}) ->
@@ -58,7 +64,7 @@ run_test_() ->
     [
      begin
          P = out(Prop()),
-         ?_assert(quickcheck(numtests(50,P)))
+         ?_assert(quickcheck(numtests(500,P)))
      end
      || Prop <- Props].
 
