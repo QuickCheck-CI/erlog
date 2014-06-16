@@ -15,7 +15,8 @@
 	     erlog_parse,
 	     erlog_scan,
 	     erlog_shell,
-	     erlog_make_server
+	     erlog_make_server,
+	     erlog_custom_server
 	    ]},
   {registered, []},
   {applications, [kernel,stdlib]}

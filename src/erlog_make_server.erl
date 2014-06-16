@@ -72,13 +72,16 @@ make_prolog_fun({FunName, Arity}) when is_atom(FunName) andalso is_integer(Arity
       "        end\n"]].
 
 create_core_erlang(Module, PL) when is_atom(Module) ->
+    ModuleName          =atom_to_list(Module),
     {PLExports,_}	= find_exports(PL),
-    Exports		= [{'module_info',0}, {'module_info',1}|PLExports],
+    Exports		= [{'module_info',0}, {'module_info',1}, {'make_child_spec',1} |PLExports],
     ExportComp		= [io_lib:format("'~p'/~p ~n",[  FunName, Arity]) ||{FunName, Arity} <- Exports],
-    Core		= ["module '", atom_to_list(Module), "' [", join(ExportComp,"                    ,"),
+    Core		= ["module '", ModuleName, "' [", join(ExportComp,"                    ,"),
 			   "]\n","     attributes []\n"],
     PLFuns		= [make_prolog_fun({FunName,Arity}) ||{FunName, Arity} <-PLExports],
-    CoreDoc		= iolist_to_binary([Core, PLFuns, core_module_info(atom_to_list(Module))]),
+    SupSpec             =  make_supervisor_spec("priv/"++ModuleName ++".pl", Module),
+   
+    CoreDoc		= iolist_to_binary([Core, PLFuns, SupSpec, core_module_info(atom_to_list(Module))]),
     compile_from_file(Module, CoreDoc).
 
 compile_from_file(Module, CoreDoc) ->
@@ -96,3 +99,9 @@ find_exports(PL) ->
 	fail ->
 	   []
     end.
+
+make_supervisor_spec(PLFile, PLModule) ->
+    ["'make_child_spec'/1 =\n",
+     "    fun (_cor0) ->\n",
+     "        {_cor0,{'",atom_to_list(PLModule),"','start_link',[\"",PLFile,"\"|[]]},'permanent',2000,'worker',%% Line 68\n",
+     "                                                                         ['",atom_to_list(PLModule),"'|['", atom_to_list(PLModule),"']]}\n"].

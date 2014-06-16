@@ -30,15 +30,12 @@ add_export_clauses(Clauses, PL0) ->
 			PL1
                 end, PL0, Clauses).
 
-clauses() ->
-    ok.
 
 prop_compile_buffer() ->
     ?FORALL({ModName, Clauses},
 	    {'edges_pl',
 	     non_empty(list(erl_export()))},
 	    ?IMPLIES(length(Clauses) =:= length(lists:usort(Clauses)),
-
 	       begin
 		   %% Purge any results of old runs
 		   code:purge(ModName),
@@ -47,10 +44,24 @@ prop_compile_buffer() ->
 		   PL		= add_export_clauses(Clauses, erlog:new()),
 		   {ok,ModName}	= erlog_make_server:create_core_erlang(ModName,PL),
 		   Exports		= ModName:module_info(exports),
-		   length(Exports) =:= length(Clauses) + 2 andalso
+		   length(Exports) =:= length(Clauses) + 3 andalso
 		       lists:all(fun(_Export = {erl_export, {'/',Fun, Arity}}) ->
 					 lists:member({Fun, Arity}, Exports)
 				 end, Clauses)
 	       end)).
 
 
+prop_supervisor_spec() ->
+    ?FORALL({ModName},
+	    {'edges_pl'},
+	    begin
+		%% Purge any results of old runs
+		code:purge(ModName),
+		code:delete(ModName),
+		PL              = erlog:new(),	
+		{ok,ModName}	= erlog_make_server:create_core_erlang(ModName,PL),
+		Exports		= ModName:module_info(exports),
+		lists:member({make_child_spec, 1}, Exports),
+		R = ModName:make_child_spec(make_ref()),
+		ok =:= supervisor:check_childspecs([R])
+	    end).
