@@ -52,6 +52,7 @@ prop_compile_buffer() ->
 
 
 prop_supervisor_spec() ->
+    erlog_make_server_tests_sup:start_link(),
     ?FORALL({ModName},
 	    {'edges_pl'},
 	    begin
@@ -61,7 +62,11 @@ prop_supervisor_spec() ->
 		PL              = erlog:new(),	
 		{ok,ModName}	= erlog_make_server:create_core_erlang(ModName,PL),
 		Exports		= ModName:module_info(exports),
-		lists:member({make_child_spec, 1}, Exports),
-		R = ModName:make_child_spec(make_ref()),
-		ok =:= supervisor:check_childspecs([R])
+		true            = lists:member({make_child_spec, 1}, Exports),
+		R		= ModName:make_child_spec(make_ref()),
+		?debugVal(R),
+		ok		= supervisor:check_childspecs([R]),
+		Pid             = supervisor:start_child(erlog_make_server_tests_sup, R),
+		?debugVal(Pid),
+		is_pid(Pid)
 	    end).
