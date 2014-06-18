@@ -7,11 +7,11 @@
 %%% Created : 16 Jun 2014 by Zachary Kessin <zkessin@testps.local>
 %%%-------------------------------------------------------------------
 -module(erlog_custom_server).
-
+-include_lib("eunit/include/eunit.hrl").
 -behaviour(gen_server).
 
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -32,8 +32,8 @@
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(PLFile) ->
+    gen_server:start_link( ?MODULE, [PLFile], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -70,6 +70,7 @@ init([PLFile]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call(Request, _From, State = #state{erlog = E}) ->
+    ?debugVal(Request),
     {Reply,E1} = E(Request), 
     {reply, Reply, State#state{erlog = E1}}.
 

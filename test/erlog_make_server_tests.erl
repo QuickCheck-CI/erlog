@@ -41,32 +41,53 @@ prop_compile_buffer() ->
 		   code:purge(ModName),
 		   code:delete(ModName),
 		   
-		   PL		= add_export_clauses(Clauses, erlog:new()),
-		   {ok,ModName}	= erlog_make_server:create_core_erlang(ModName,PL),
-		   Exports		= ModName:module_info(exports),
+		   PL		   = add_export_clauses(Clauses, erlog:new()),
+		   {ok,ModName}    = erlog_make_server:create_core_erlang(ModName,PL),
+		   Exports	   = ModName:module_info(exports),
 		   length(Exports) =:= length(Clauses) + 3 andalso
 		       lists:all(fun(_Export = {erl_export, {'/',Fun, Arity}}) ->
 					 lists:member({Fun, Arity}, Exports)
 				 end, Clauses)
 	       end)).
 
+set_node() ->
+    elements([a,b,c,d,e,f]).
+edge() ->
+    {edge, set_node(), set_node()}.
+edges() ->
+    non_empty(list(edge())).
 
 prop_supervisor_spec() ->
     erlog_make_server_tests_sup:start_link(),
-    ?FORALL({ModName},
-	    {'edges_pl'},
+    ModName		= edges_pl,
+    {ok,ModName}	= erlog_make_server:compile_file("priv/edges_pl.pl",ModName),
+    R			= ModName:make_child_spec(make_ref()),
+    ok			= supervisor:check_childspecs([R]),
+    {ok,Pid}		= supervisor:start_child(erlog_make_server_tests_sup, R),
+    is_process_alive(Pid).
+    
+    
+
+
+prop_run_pl() ->
+   
+    ?FORALL({ModName, Edges},
+	    {'edges_pl',edges() },
 	    begin
-		%% Purge any results of old runs
 		code:purge(ModName),
 		code:delete(ModName),
-		PL              = erlog:new(),	
-		{ok,ModName}	= erlog_make_server:create_core_erlang(ModName,PL),
+		{ok,ModName}	= erlog_make_server:compile_file("priv/edges_pl.pl",ModName),
 		Exports		= ModName:module_info(exports),
+
+		?assert(lists:member({add_edge, 3}, Exports)),
+
 		true            = lists:member({make_child_spec, 1}, Exports),
-		R		= ModName:make_child_spec(make_ref()),
-		?debugVal(R),
-		ok		= supervisor:check_childspecs([R]),
-		Pid             = supervisor:start_child(erlog_make_server_tests_sup, R),
-		?debugVal(Pid),
-		is_pid(Pid)
+		{ok,Pid}        = erlog_custom_server:start_link("priv/edges_pl.pl"),
+		true            = is_process_alive(Pid),
+		lists:foreach(fun({edge,S,F}) ->
+				      ok = ModName:add_edge(Pid,S,F),
+				      true
+			  end, Edges),
+		unlink(Pid),
+		is_process_alive(Pid)
 	    end).

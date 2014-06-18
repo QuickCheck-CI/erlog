@@ -26,8 +26,8 @@
 -endif.
 
 
--spec(compile_buffer(atom(), iolist()) ->
-	     {ok, atom()}).
+%% -spec(compile_buffer(atom(), iolist()) ->
+%% 	     {ok, atom()}).
 
 join([],_) ->
     [];
@@ -36,8 +36,10 @@ join([Last],_) ->
 join([First|Rest],JoinWith) ->
     [First, JoinWith, join(Rest, JoinWith)].
 
-compile_buffer(Module, _Buffer) ->
-    
+compile_file(File,Module) ->
+    PL       = erlog:new(),
+    {ok,PL1} = PL({consult, File}),
+    create_core_erlang(Module, PL1),
     {ok, Module}.
 
 core_module_info(ModuleName) ->
@@ -58,7 +60,7 @@ make_prolog_fun({FunName, Arity}) when is_atom(FunName) andalso is_integer(Arity
     [["'",atom_to_list(FunName), "'/",io_lib:format("~p",[Arity]), " =\n"],
      ["    fun (",CVarsList,") ->\n",
       "       case call 'gen_server':'call'\n",
-      "                (_cor1, {'prove',{'",atom_to_list(FunName),"',",PLLists,",{'Y'}}}) of\n",
+      "                (_cor0, {'prove',{'",atom_to_list(FunName),"',",PLLists,",{'Y'}}}) of\n",
 
       "          <{'succeed',[{'Y',Y}|[]]}> when 'true' ->\n",
       
@@ -72,7 +74,7 @@ make_prolog_fun({FunName, Arity}) when is_atom(FunName) andalso is_integer(Arity
       "        end\n"]].
 
 create_core_erlang(Module, PL) when is_atom(Module) ->
-    ModuleName          =atom_to_list(Module),
+    ModuleName          = atom_to_list(Module),
     {PLExports,_}	= find_exports(PL),
     Exports		= [{'module_info',0}, {'module_info',1}, {'make_child_spec',1} |PLExports],
     ExportComp		= [io_lib:format("'~p'/~p ~n",[  FunName, Arity]) ||{FunName, Arity} <- Exports],
@@ -82,12 +84,12 @@ create_core_erlang(Module, PL) when is_atom(Module) ->
     SupSpec             =  make_supervisor_spec("priv/"++ModuleName ++".pl", Module),
    
     CoreDoc		= iolist_to_binary([Core, PLFuns, SupSpec, core_module_info(atom_to_list(Module))]),
-    compile_from_file(Module, CoreDoc).
+    compile_from_core(Module, CoreDoc).
 
-compile_from_file(Module, CoreDoc) ->
+compile_from_core(Module, CoreDoc) ->
     File		= atom_to_list(Module) ++ ".core",
     ok			= file:write_file(File, CoreDoc),
-    {ok, Module}	= compile:file(File, [from_core,debug_info,return_errors]), 
+    {ok, Module}	= compile:file(File, [from_core, debug_info, return_errors]), 
     ok			= file:delete(File),
     {ok, Module}.
 
@@ -103,5 +105,5 @@ find_exports(PL) ->
 make_supervisor_spec(PLFile, PLModule) ->
     ["'make_child_spec'/1 =\n",
      "    fun (_cor0) ->\n",
-     "        {_cor0,{'",atom_to_list(PLModule),"','start_link',[\"",PLFile,"\"|[]]},'permanent',2000,'worker',%% Line 68\n",
-     "                                                                         ['",atom_to_list(PLModule),"'|['", atom_to_list(PLModule),"']]}\n"].
+     "        {_cor0,{'erlog_custom_server','start_link',[\"",PLFile,"\"|[]]},'permanent',2000,'worker',%% Line 68\n",
+     "                                                                         ['",atom_to_list(PLModule),"'|[]]}\n"].
